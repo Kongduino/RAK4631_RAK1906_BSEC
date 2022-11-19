@@ -98,3 +98,38 @@ Timestamp: 43.30 secs
 ```
 
 *Now waiting desperately for that ` . IAQ: 25.00` to change to something meaningful...*
+
+## UPDATES
+
+### MSL / ALT
+
+Just added two commands:
+
+```
+ . msl: Gets/sets the current MSL Pressure in HPa.
+ . alt: Computes the altitude based on the current MSL.
+```
+
+`/msl` will return the current MSL Pressure, whereas `/msl xxxx` will update it. This will help get an accurate altitude with `/alt`.
+
+```
+Timestamp: 250.77 secs
+ . Raw Temperature: 37.76 C
+ . Pressure: 996.52 HPa
+ . Raw Humidity: 43.56%
+ . Gas Resistance: 0
+ . IAQ: 25.00
+ . IAQ Accuracy: 0.00
+ . Temperature: 37.75 C
+ . Humidity: 43.59%
+ . Static IAQ: 25.00
+ . CO2 Equivalent: 500.00
+ . Breath VOC Equivalent: 0.50
+
+/alt
+* Altitude: 155.54 m
+/msl 1013.2
+* MSL Pressure set to 1013.20 HPa
+/alt
+* Altitude: 139.45 m
+```

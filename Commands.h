@@ -7,9 +7,12 @@ void handleHelp(char *);
 void evalCmd(char *, char *);
 void handleBsecFreq(char *);
 void handleIAQFreq(char *);
+void handleMSL(char *);
+void handleAltitude(char *);
 void handleSave(char *);
 void pollSensor();
 void handlePoll(char *);
+float calcAltitude(float);
 
 void updateState(void);
 void loadState(void);
@@ -25,6 +28,7 @@ Bsec iaqSensor;
 uint32_t saveInterval = 3600000, iaqInterval = 10000;
 double lastSave;
 uint32_t t0;
+float SEALEVELPRESSURE_HPA = 1015.1, lastPressure = -1;
 
 int cmdCount = 0;
 struct myCommand {
@@ -37,6 +41,8 @@ myCommand cmds[] = {
   {handleHelp, "help", "Shows this help."},
   {handleBsecFreq, "bsec_fq", "Gets/sets the save interval in seconds."},
   {handleIAQFreq, "iaq_fq", "Gets/sets the IAQ polling in seconds."},
+  {handleMSL, "msl", "Gets/sets the current MSL Pressure in HPa."},
+  {handleAltitude, "alt", "Computes the altitude based on the current MSL."},
   {handleSave, "save", "Saves BSEC status."},
   {handlePoll, "poll", "Polls the BME680."},
 };
@@ -84,9 +90,8 @@ void handleBsecFreq(char *param) {
     Serial.printf("Save Interval: every %d s\n", (saveInterval / 1000));
     return;
   } else {
-    // fq xxx.xxx set frequency
-    uint32_t value = atoi(param + 8);
-    // for some reason sscanf returns 0.000 as value...
+    uint32_t value;
+    int rslt = sscanf(param, "%*s %dl", &value);
     if (value < 60) {
       // Less than 60 seconds is going to kill your Flash
       Serial.printf("Invalid save interval: %d, %s\n", value, param);
@@ -103,11 +108,44 @@ void handleIAQFreq(char *param) {
     Serial.printf("Polling Interval: every %d s\n", (iaqInterval / 1000));
     return;
   } else {
-    // fq xxx.xxx set frequency
-    uint32_t value = atoi(param + 7);
+    uint32_t value;
+    int rslt = sscanf(param, "%*s %dl", &value);
     iaqInterval = value * 1000;
     Serial.printf("* Polling Interval set to %d s\n", (iaqInterval / 1000));
   }
+}
+
+void handleMSL(char *param) {
+  if (strcmp("/msl", param) == 0) {
+    // no parameters
+    Serial.printf("MSL: %.2f HPa\n", SEALEVELPRESSURE_HPA);
+    return;
+  } else {
+    float value;
+    int rslt = sscanf(param, "%*s %f", &value);
+    if (rslt == 0) {
+      // Serial.printf("Failed to parse this input: `%s`\n", param);
+      value = atof(param + 4);
+      // return;
+    }
+    if (value < 870.0 || value > 1084.8) {
+      Serial.printf("Invalid HPa: %d, %s\n", value, param);
+      return;
+    }
+    SEALEVELPRESSURE_HPA = value;
+    Serial.printf("* MSL Pressure set to %.2f HPa\n", SEALEVELPRESSURE_HPA);
+  }
+}
+
+void handleAltitude(char *param) {
+  if (lastPressure == -1.0) {
+    Serial.println("Sensor is not ready yet! Wait until it's been polled.");
+    return;
+  }
+  // If you run /alt before the sensor has been polled at least once,
+  // you'll get a weird result. SO....
+  float value = calcAltitude(lastPressure);
+  Serial.printf("* Altitude: %.2f m\n", value);
 }
 
 void handlePoll(char *param) {
@@ -122,7 +160,8 @@ void pollSensor() {
     digitalWrite(BLUE_LED, HIGH);
     Serial.printf("Timestamp: %.2f secs\n", time_trigger / 1000.0);
     Serial.printf(" . Raw Temperature: %.2f C\n", iaqSensor.rawTemperature);
-    Serial.printf(" . Pressure: %.2f HPa\n", iaqSensor.pressure / 100.0);
+    lastPressure = iaqSensor.pressure / 100.0;
+    Serial.printf(" . Pressure: %.2f HPa\n", lastPressure);
     Serial.printf(" . Raw Humidity: %.2f%%\n", iaqSensor.rawHumidity);
     Serial.printf(" . Gas Resistance: %d\n", iaqSensor.gasResistance);
     Serial.printf(" . IAQ: %.2f\n", iaqSensor.iaq);
@@ -131,7 +170,7 @@ void pollSensor() {
     Serial.printf(" . Humidity: %.2f%%\n", iaqSensor.humidity);
     Serial.printf(" . Static IAQ: %.2f\n", iaqSensor.staticIaq);
     Serial.printf(" . CO2 Equivalent: %.2f\n", iaqSensor.co2Equivalent);
-    Serial.printf(" . Breath VOC EquivalentQ: %.2f\n\n", iaqSensor.breathVocEquivalent);
+    Serial.printf(" . Breath VOC Equivalent: %.2f\n\n", iaqSensor.breathVocEquivalent);
     if (lastSave == 0 || millis() - lastSave > saveInterval) {
       updateState();
       lastSave = millis();
@@ -220,4 +259,13 @@ void hexDump(unsigned char *buf, uint16_t len) {
     Serial.print(s);
   }
   Serial.print(F("   +------------------------------------------------+ +----------------+\n"));
+}
+
+float calcAltitude(float pressure) {
+  float A = pressure / SEALEVELPRESSURE_HPA;
+  float B = 1 / 5.25588;
+  float C = pow(A, B);
+  C = 1.0 - C;
+  C = C / 0.0000225577;
+  return C;
 }
