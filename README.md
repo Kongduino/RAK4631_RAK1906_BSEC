@@ -133,3 +133,5 @@ Timestamp: 250.77 secs
 /alt
 * Altitude: 139.45 m
 ```
+
+### This is a buy-me-a-beer-if-you-come-to-HK-ware 😉
