@@ -96,3 +96,5 @@ Timestamp: 43.30 secs
  . CO2 Equivalent: 500.00
  . Breath VOC EquivalentQ: 0.50
 ```
+
+*Now waiting desperately for that ` . IAQ: 25.00` to change to something meaningful...*
