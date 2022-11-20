@@ -248,6 +248,7 @@ void handleRestore(char *param) {
     return;
   }
   Serial.println("Saving state to BME680.");
+  hexDump(backup, arrayLen);
   iaqSensor.setState(backup);
   checkIaqSensorStatus();
 }
