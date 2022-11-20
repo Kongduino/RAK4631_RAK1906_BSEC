@@ -12,7 +12,12 @@ void handleAltitude(char *);
 void handleSave(char *);
 void pollSensor();
 void handlePoll(char *);
+void handleBackup(char *);
+void handleRestore(char *);
 float calcAltitude(float);
+void checkIaqSensorStatus(void);
+void array2hex(uint8_t *, size_t, uint8_t *, uint8_t);
+void hex2array(uint8_t *, uint8_t *, size_t);
 
 void updateState(void);
 void loadState(void);
@@ -45,6 +50,8 @@ myCommand cmds[] = {
   {handleAltitude, "alt", "Computes the altitude based on the current MSL."},
   {handleSave, "save", "Saves BSEC status."},
   {handlePoll, "poll", "Polls the BME680."},
+  {handleBackup, "backup", "Retrieves the current state as HEX."},
+  {handleRestore, "restore", "Uploads current state as HEX to BME680."},
 };
 
 void handleHelp(char *param) {
@@ -215,10 +222,37 @@ void loadState(void) {
   file.read((uint8_t *)&bsecState, BSEC_MAX_STATE_BLOB_SIZE);
   file.close();
   hexDump(bsecState, BSEC_MAX_STATE_BLOB_SIZE);
+  iaqSensor.setState(bsecState);
+  checkIaqSensorStatus();
+}
+
+void handleBackup(char *param) {
+  Serial.println("Loading current state:");
+  uint8_t backup[BSEC_MAX_STATE_BLOB_SIZE];
+  uint8_t backupHEX[BSEC_MAX_STATE_BLOB_SIZE * 2];
+  iaqSensor.getState(backup);
+  unsigned int b64Len = encode_base64(backup, BSEC_MAX_STATE_BLOB_SIZE, backupHEX);
+  backupHEX[b64Len] = 0;
+  Serial.print("On the next device do:\n/restore ");
+  Serial.println((char*)backupHEX);
+}
+
+void handleRestore(char *param) {
+  uint8_t backup[BSEC_MAX_STATE_BLOB_SIZE];
+  uint8_t backupHEX[BSEC_MAX_STATE_BLOB_SIZE * 2];
+  int i = sscanf(param, "/%*s %s", (char*)backupHEX);
+  int ln = strlen((char*)backupHEX);
+  unsigned int arrayLen = decode_base64(backupHEX, ln, backup);
+  if (arrayLen != BSEC_MAX_STATE_BLOB_SIZE) {
+    Serial.printf("Length of data is incorrect: %d vs expected %d\n", arrayLen, BSEC_MAX_STATE_BLOB_SIZE);
+    return;
+  }
+  Serial.println("Saving state to BME680.");
+  iaqSensor.setState(backup);
+  checkIaqSensorStatus();
 }
 
 void updateState(void) {
-  Serial.println("updateState");
   iaqSensor.getState(bsecState);
   checkIaqSensorStatus();
   Serial.print("Writing state to Flash... ");

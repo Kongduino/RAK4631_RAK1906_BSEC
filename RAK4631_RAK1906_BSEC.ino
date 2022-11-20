@@ -3,6 +3,7 @@ void checkIaqSensorStatus(void);
 void errLeds(void);
 
 #include "bsec.h"
+#include "base64.hpp"
 #include "Commands.h"
 
 const uint8_t bsec_config_iaq[] = {

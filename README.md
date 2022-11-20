@@ -6,17 +6,20 @@ It is using the `config/generic_33v_3s_4d/bsec_iaq.txt` config file provided by 
 
 ## Batteries Included!
 
-This sketch comes with an extensible command framework, which has for now 5 commands:
+This sketch comes with an extensible command framework, which has for now 5^h 7^H 9 commands:
 
 ```
 /help
-Available commands: 5
+Available commands: 9
  . help: Shows this help.
  . bsec_fq: Gets/sets the save interval in seconds.
  . iaq_fq: Gets/sets the IAQ polling in seconds.
+ . msl: Gets/sets the current MSL Pressure in HPa.
+ . alt: Computes the altitude based on the current MSL.
  . save: Saves BSEC status.
  . poll: Polls the BME680.
-```
+ . backup: Retrieves the current state as HEX.
+ . restore: Uploads current state as HEX to BME680.```
 
 You can enquire at which frequency the IAQ is polled, as I mentioned, and at which frequency the IAQ status is saved to the file system. You don't want to do this too often. It is set up right now at one hour, but should probably be set at something longer, 4 hours or more.
 
@@ -132,6 +135,15 @@ Timestamp: 250.77 secs
 * MSL Pressure set to 1013.20 HPa
 /alt
 * Altitude: 139.45 m
+```
+
+## Backup / Restore state
+
+If you are deploying to more than one device, you might want to synchronize all devices and set them to the same state. The `backup` command will compile the current state to a command + Base64-encoded string. Run that command to set the next BME680 to this state.
+
+```
+/restore AAgEAT0AAAAAAAAAcwAAAC0AAaUAAAAAAAAAAAAAAAAAAAAAAAAAAP//AgIAAAAAAAAAAAAAAAAAAAAAAgwAAqUAAMhBAADIQRAAA6UAAAAAAAAAAAAAAAAWAAWlAAAAAAAAAAAAAAAAAAAAAAAADAAJpf////////9/CAAKpQAAAAAAAAAAypYAAA==
+Saving state to BME680.
 ```
 
 ### This is a buy-me-a-beer-if-you-come-to-HK-ware 😉
