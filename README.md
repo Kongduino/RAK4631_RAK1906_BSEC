@@ -20,6 +20,7 @@ Available commands: 9
  . poll: Polls the BME680.
  . backup: Retrieves the current state as HEX.
  . restore: Uploads current state as HEX to BME680.```
+```
 
 You can enquire at which frequency the IAQ is polled, as I mentioned, and at which frequency the IAQ status is saved to the file system. You don't want to do this too often. It is set up right now at one hour, but should probably be set at something longer, 4 hours or more.
 
